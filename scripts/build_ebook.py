@@ -113,6 +113,11 @@ def main():
         help="Book author"
     )
     parser.add_argument(
+        "--cover",
+        type=Path,
+        help="Cover image file"
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Just show what would be included"
@@ -157,6 +162,8 @@ def main():
     print(f"\nBuilding EPUB: {output}")
     print(f"Title: {args.title}")
     print(f"Author: {args.author}")
+    if args.cover:
+        print(f"Cover: {args.cover}")
 
     # Import and run the converter
     from md2epub.converter import convert_to_epub
@@ -170,6 +177,7 @@ def main():
         vault_root=args.folder.parent,
         title=args.title,
         author=args.author,
+        cover=args.cover,
         progress_callback=progress,
     )
 

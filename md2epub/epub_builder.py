@@ -140,6 +140,13 @@ hr {
     border-top: 1px solid #eee;
     margin: 2em 0;
 }
+
+/* Highlights (Obsidian ==text== syntax) */
+mark {
+    background-color: #fff3a3;
+    padding: 0.1em 0.2em;
+    border-radius: 2px;
+}
 """
 
 
@@ -241,14 +248,14 @@ class EpubBuilder:
     def _wrap_chapter_html(self, title: str, content: str) -> str:
         """Wrap chapter content in a full HTML document."""
         # Note: ebooklib handles XML declaration and doctype internally
+        # Don't add H1 here - the content already has the # heading from markdown
         return f"""<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>{title}</title>
     <link rel="stylesheet" type="text/css" href="style/default.css"/>
 </head>
 <body>
-    <h1>{title}</h1>
-    {content}
+{content}
 </body>
 </html>"""
 

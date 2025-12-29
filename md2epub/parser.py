@@ -63,6 +63,23 @@ CODE_BLOCK_PATTERN = re.compile(
     re.DOTALL
 )
 
+# Pattern to match Obsidian navigation blocks (Prev/Next Card links between ***)
+NAV_BLOCK_PATTERN = re.compile(
+    r"\*{3,}\s*\n"                          # Opening *** or more
+    r"(?:\*\*(?:Prev|Next)\s+Card\*\*:.*\n)+"  # One or more Prev/Next Card lines
+    r"\*{3,}\s*\n?",                        # Closing ***
+    re.MULTILINE
+)
+
+# Pattern to match Obsidian highlight syntax ==text==
+HIGHLIGHT_PATTERN = re.compile(r"==(.*?)==", re.DOTALL)
+
+# Pattern to match Connections section (and everything after it until end or next H1)
+CONNECTIONS_PATTERN = re.compile(
+    r"^##\s+Connections\s*\n.*?(?=^#\s|\Z)",
+    re.MULTILINE | re.DOTALL
+)
+
 
 def parse_note(
     content: str,
@@ -86,7 +103,16 @@ def parse_note(
     # Step 1: Extract frontmatter
     frontmatter, markdown_content = parse_frontmatter(content)
 
-    # Step 2: Process code blocks first (before other transformations)
+    # Step 2: Strip navigation blocks (Prev/Next Card links)
+    markdown_content = NAV_BLOCK_PATTERN.sub("", markdown_content)
+
+    # Step 2b: Strip Connections section
+    markdown_content = CONNECTIONS_PATTERN.sub("", markdown_content)
+
+    # Step 3: Convert Obsidian highlights ==text== to <mark> tags
+    markdown_content = HIGHLIGHT_PATTERN.sub(r"<mark>\1</mark>", markdown_content)
+
+    # Step 4: Process code blocks first (before other transformations)
     if config.highlight_code:
         markdown_content = _highlight_code_blocks(markdown_content, config.code_style)
 
