@@ -231,19 +231,13 @@ hr {
 }
 
 .toc li {
-    margin: 0.5em 0;
-    padding-left: 1em;
+    margin: 0.8em 0;
+    line-height: 1.4;
 }
 
 .toc a {
     text-decoration: none;
     color: #1a1a1a;
-}
-
-.toc .chapter-num {
-    display: inline-block;
-    width: 3em;
-    color: #666;
 }
 """
 
@@ -334,8 +328,10 @@ class PdfBuilder:
             parts.append('<h1>Contents</h1>')
             parts.append('<ul>')
             for i, (title, _) in enumerate(self.chapters):
-                chapter_num = f"Chapter {i}" if i > 0 else "Prologue"
-                parts.append(f'<li><span class="chapter-num">{chapter_num}:</span> {title}</li>')
+                if i == 0:
+                    parts.append(f'<li>Prologue: {title}</li>')
+                else:
+                    parts.append(f'<li>Chapter {i}: {title}</li>')
             parts.append('</ul>')
             parts.append('</div>')
 
