@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "markdown-to-epub"
+version = "0.1.0"
+description = "Convert Obsidian markdown notes to EPUB format"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Scott Novis" }
+]
+keywords = ["obsidian", "markdown", "epub", "ebook", "converter"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup :: Markdown",
+]
+dependencies = [
+    "click>=8.0",
+    "ebooklib>=0.18",
+    "markdown>=3.5",
+    "pyyaml>=6.0",
+    "Pillow>=10.0",
+    "Pygments>=2.17",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+md2epub = "md2epub.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/scottnovis/markdown-to-epub"
+Repository = "https://github.com/scottnovis/markdown-to-epub"
+
+[tool.hatch.build.targets.wheel]
+packages = ["md2epub"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
