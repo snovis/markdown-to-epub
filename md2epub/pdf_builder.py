@@ -329,15 +329,15 @@ class PdfBuilder:
             parts.append('<ul>')
             for i, (title, _) in enumerate(self.chapters):
                 if i == 0:
-                    parts.append(f'<li>Prologue: {title}</li>')
+                    parts.append(f'<li><a href="#chapter-{i}">Prologue: {title}</a></li>')
                 else:
-                    parts.append(f'<li>Chapter {i}: {title}</li>')
+                    parts.append(f'<li><a href="#chapter-{i}">Chapter {i}: {title}</a></li>')
             parts.append('</ul>')
             parts.append('</div>')
 
         # Chapters
-        for title, content in self.chapters:
-            parts.append(f'<div class="chapter">')
+        for i, (title, content) in enumerate(self.chapters):
+            parts.append(f'<div class="chapter" id="chapter-{i}">')
             parts.append(content)
             parts.append('</div>')
 
