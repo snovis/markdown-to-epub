@@ -138,6 +138,11 @@ def main():
         action="store_true",
         help="Just show what would be included"
     )
+    parser.add_argument(
+        "--pdf",
+        action="store_true",
+        help="Generate PDF instead of EPUB"
+    )
 
     args = parser.parse_args()
 
@@ -162,7 +167,12 @@ def main():
 
     # Build the md2epub command
     file_paths = [str(f[0]) for f in files]
-    output = args.output or args.folder / "ebook.epub"
+    if args.output:
+        output = args.output
+    elif args.pdf:
+        output = args.folder / "ebook.pdf"
+    else:
+        output = args.folder / "ebook.epub"
 
     # Get author from first file if not specified
     if not args.author:
@@ -175,7 +185,8 @@ def main():
         # Use folder name or first meaningful part
         args.title = args.folder.name.replace("eBook", "").strip()
 
-    print(f"\nBuilding EPUB: {output}")
+    output_type = "PDF" if args.pdf else "EPUB"
+    print(f"\nBuilding {output_type}: {output}")
     print(f"Title: {args.title}")
     if args.subtitle:
         print(f"Subtitle: {args.subtitle}")
@@ -185,9 +196,6 @@ def main():
     if args.publisher:
         print(f"Publisher: {args.publisher}")
 
-    # Import and run the converter
-    from md2epub.converter import convert_to_epub
-
     def progress(current, total, message):
         print(f"  [{current}/{total}] {message}")
 
@@ -195,19 +203,40 @@ def main():
     copyright_year = getattr(args, 'copyright_year', None)
     copyright_holder = getattr(args, 'copyright_holder', None)
 
-    convert_to_epub(
-        files=[f[0] for f in files],
-        output=output,
-        vault_root=args.folder.parent,
-        title=args.title,
-        author=args.author,
-        cover=args.cover,
-        subtitle=args.subtitle,
-        publisher=args.publisher,
-        copyright_year=copyright_year,
-        copyright_holder=copyright_holder,
-        progress_callback=progress,
-    )
+    if args.pdf:
+        # Build PDF
+        from md2epub.converter import convert_to_pdf
+
+        convert_to_pdf(
+            files=[f[0] for f in files],
+            output=output,
+            vault_root=args.folder.parent,
+            title=args.title,
+            author=args.author,
+            cover=args.cover,
+            subtitle=args.subtitle,
+            publisher=args.publisher,
+            copyright_year=copyright_year,
+            copyright_holder=copyright_holder,
+            progress_callback=progress,
+        )
+    else:
+        # Build EPUB
+        from md2epub.converter import convert_to_epub
+
+        convert_to_epub(
+            files=[f[0] for f in files],
+            output=output,
+            vault_root=args.folder.parent,
+            title=args.title,
+            author=args.author,
+            cover=args.cover,
+            subtitle=args.subtitle,
+            publisher=args.publisher,
+            copyright_year=copyright_year,
+            copyright_holder=copyright_holder,
+            progress_callback=progress,
+        )
 
     print(f"\nSuccess! Created: {output}")
 
