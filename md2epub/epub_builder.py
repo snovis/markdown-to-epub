@@ -158,6 +158,10 @@ class EpubBuilder:
         title: str = "Untitled",
         author: str = "Unknown",
         language: str = "en",
+        subtitle: str | None = None,
+        publisher: str | None = None,
+        copyright_year: str | None = None,
+        copyright_holder: str | None = None,
     ):
         """
         Initialize the EPUB builder.
@@ -166,10 +170,25 @@ class EpubBuilder:
             title: Book title.
             author: Book author.
             language: Book language code.
+            subtitle: Book subtitle.
+            publisher: Publisher name.
+            copyright_year: Copyright year.
+            copyright_holder: Copyright holder name.
         """
         self.book = epub.EpubBook()
         self.chapters: list[epub.EpubHtml] = []
         self.asset_manager: AssetManager | None = None
+        self._cover_page: epub.EpubHtml | None = None
+        self._title_page: epub.EpubHtml | None = None
+        self._copyright_page: epub.EpubHtml | None = None
+
+        # Store for front matter
+        self._title = title
+        self._author = author
+        self._subtitle = subtitle
+        self._publisher = publisher
+        self._copyright_year = copyright_year or str(datetime.now().year)
+        self._copyright_holder = copyright_holder or author
 
         # Set metadata
         self.book.set_identifier(f"md2epub-{uuid4().hex[:8]}")
@@ -177,9 +196,15 @@ class EpubBuilder:
         self.book.set_language(language)
         self.book.add_author(author)
         self.book.add_metadata("DC", "date", datetime.now().isoformat())
+        if publisher:
+            self.book.add_metadata("DC", "publisher", publisher)
 
         # Add default CSS
         self._add_default_css()
+
+        # Create front matter pages
+        self._create_title_page()
+        self._create_copyright_page()
 
     def _add_default_css(self) -> None:
         """Add the default stylesheet."""
@@ -192,9 +217,118 @@ class EpubBuilder:
         self.book.add_item(css)
         self._default_css = css
 
+    def _create_title_page(self) -> None:
+        """Create the title page."""
+        subtitle_html = ""
+        if self._subtitle:
+            subtitle_html = f'<p class="subtitle">{self._subtitle}</p>'
+
+        title_html = f"""<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Title Page</title>
+    <style>
+        body {{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+            text-align: center;
+            font-family: Georgia, serif;
+            padding: 2em;
+        }}
+        .title {{
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 0.3em;
+            line-height: 1.2;
+        }}
+        .subtitle {{
+            font-size: 1.3em;
+            font-style: italic;
+            color: #555;
+            margin-bottom: 2em;
+        }}
+        .author {{
+            font-size: 1.5em;
+            color: #333;
+            margin-top: 1em;
+        }}
+        .publisher {{
+            font-size: 1em;
+            color: #666;
+            margin-top: 3em;
+        }}
+    </style>
+</head>
+<body>
+    <h1 class="title">{self._title}</h1>
+    {subtitle_html}
+    <p class="author">{self._author}</p>
+</body>
+</html>"""
+
+        self._title_page = epub.EpubHtml(
+            title="Title Page",
+            file_name="title.xhtml",
+            lang=self.book.language,
+        )
+        self._title_page.set_content(title_html)
+        self.book.add_item(self._title_page)
+
+    def _create_copyright_page(self) -> None:
+        """Create the copyright page."""
+        publisher_html = ""
+        if self._publisher:
+            publisher_html = f"<p>Published by {self._publisher}</p>"
+
+        copyright_html = f"""<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Copyright</title>
+    <style>
+        body {{
+            font-family: Georgia, serif;
+            font-size: 0.9em;
+            color: #333;
+            padding: 2em;
+            line-height: 1.6;
+        }}
+        .copyright-page {{
+            margin-top: 30vh;
+        }}
+        p {{
+            margin: 0.8em 0;
+        }}
+        .rights {{
+            margin-top: 1.5em;
+        }}
+    </style>
+</head>
+<body>
+    <div class="copyright-page">
+        <p><strong>{self._title}</strong></p>
+        <p>Copyright © {self._copyright_year} by {self._copyright_holder}</p>
+        {publisher_html}
+        <p class="rights">All rights reserved. No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.</p>
+    </div>
+</body>
+</html>"""
+
+        self._copyright_page = epub.EpubHtml(
+            title="Copyright",
+            file_name="copyright.xhtml",
+            lang=self.book.language,
+        )
+        self._copyright_page.set_content(copyright_html)
+        self.book.add_item(self._copyright_page)
+
     def set_cover(self, image_path: Path) -> None:
         """
         Set the book cover image.
+
+        Creates both the EPUB cover metadata AND a cover page as the first
+        content page (for readers like reMarkable that need it).
 
         Args:
             image_path: Path to the cover image file.
@@ -204,6 +338,28 @@ class EpubBuilder:
 
         content = image_path.read_bytes()
         self.book.set_cover(image_path.name, content)
+
+        # Also create a cover page for readers that need it (like reMarkable)
+        # Use different filename since ebooklib creates its own cover.xhtml
+        self._cover_page = epub.EpubHtml(
+            title="Cover",
+            file_name="coverpage.xhtml",
+            lang=self.book.language,
+        )
+        cover_html = f"""<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Cover</title>
+    <style>
+        body {{ margin: 0; padding: 0; text-align: center; }}
+        img {{ max-width: 100%; max-height: 100%; }}
+    </style>
+</head>
+<body>
+    <img src="{image_path.name}" alt="Cover"/>
+</body>
+</html>"""
+        self._cover_page.set_content(cover_html)
+        self.book.add_item(self._cover_page)
 
     def add_chapter(
         self,
@@ -286,7 +442,19 @@ class EpubBuilder:
             include_toc: Whether to include a table of contents.
         """
         # Define spine (reading order)
-        spine_items = ["nav"] if include_toc else []
+        spine_items = []
+        # Add cover page first if we have one
+        if self._cover_page:
+            spine_items.append(self._cover_page)
+        # Add title page
+        if self._title_page:
+            spine_items.append(self._title_page)
+        # Add copyright page
+        if self._copyright_page:
+            spine_items.append(self._copyright_page)
+        # Add table of contents
+        if include_toc:
+            spine_items.append("nav")
         spine_items.extend(self.chapters)
         self.book.spine = spine_items
 
@@ -308,6 +476,10 @@ def build_epub(
     cover_path: Path | None = None,
     asset_manager: AssetManager | None = None,
     include_toc: bool = True,
+    subtitle: str | None = None,
+    publisher: str | None = None,
+    copyright_year: str | None = None,
+    copyright_holder: str | None = None,
 ) -> None:
     """
     Build an EPUB from a list of parsed notes.
@@ -322,6 +494,10 @@ def build_epub(
         cover_path: Optional cover image path.
         asset_manager: Optional asset manager with images.
         include_toc: Whether to include a table of contents.
+        subtitle: Book subtitle for title page.
+        publisher: Publisher name for copyright page.
+        copyright_year: Copyright year.
+        copyright_holder: Copyright holder name.
     """
     if not notes:
         raise ValueError("No notes provided")
@@ -333,7 +509,14 @@ def build_epub(
         author = notes[0].frontmatter.author or "Unknown"
 
     # Create builder
-    builder = EpubBuilder(title=title, author=author)
+    builder = EpubBuilder(
+        title=title,
+        author=author,
+        subtitle=subtitle,
+        publisher=publisher,
+        copyright_year=copyright_year,
+        copyright_holder=copyright_holder,
+    )
 
     # Add cover if provided
     if cover_path:

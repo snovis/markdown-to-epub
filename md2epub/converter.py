@@ -27,6 +27,10 @@ def convert_to_epub(
     include_toc: bool = True,
     optimize_images: bool = True,
     progress_callback: Callable[[int, int, str], None] | None = None,
+    subtitle: str | None = None,
+    publisher: str | None = None,
+    copyright_year: str | None = None,
+    copyright_holder: str | None = None,
 ) -> Path:
     """
     Convert markdown files to an EPUB.
@@ -44,6 +48,10 @@ def convert_to_epub(
         include_toc: Whether to include table of contents.
         optimize_images: Whether to resize/compress images.
         progress_callback: Optional callback(current, total, message).
+        subtitle: Book subtitle for title page.
+        publisher: Publisher name for copyright page.
+        copyright_year: Copyright year.
+        copyright_holder: Copyright holder name.
 
     Returns:
         Path to the created EPUB file.
@@ -98,6 +106,10 @@ def convert_to_epub(
         cover_path=cover,
         asset_manager=asset_manager,
         include_toc=include_toc,
+        subtitle=subtitle,
+        publisher=publisher,
+        copyright_year=copyright_year,
+        copyright_holder=copyright_holder,
     )
 
     report_progress(total_steps, total_steps, "Done")

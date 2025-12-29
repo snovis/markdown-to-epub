@@ -118,6 +118,22 @@ def main():
         help="Cover image file"
     )
     parser.add_argument(
+        "--subtitle",
+        help="Book subtitle for title page"
+    )
+    parser.add_argument(
+        "--publisher",
+        help="Publisher name for copyright page"
+    )
+    parser.add_argument(
+        "--copyright-year",
+        help="Copyright year (default: current year)"
+    )
+    parser.add_argument(
+        "--copyright-holder",
+        help="Copyright holder (default: author)"
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Just show what would be included"
@@ -161,15 +177,23 @@ def main():
 
     print(f"\nBuilding EPUB: {output}")
     print(f"Title: {args.title}")
+    if args.subtitle:
+        print(f"Subtitle: {args.subtitle}")
     print(f"Author: {args.author}")
     if args.cover:
         print(f"Cover: {args.cover}")
+    if args.publisher:
+        print(f"Publisher: {args.publisher}")
 
     # Import and run the converter
     from md2epub.converter import convert_to_epub
 
     def progress(current, total, message):
         print(f"  [{current}/{total}] {message}")
+
+    # Handle hyphenated argument names
+    copyright_year = getattr(args, 'copyright_year', None)
+    copyright_holder = getattr(args, 'copyright_holder', None)
 
     convert_to_epub(
         files=[f[0] for f in files],
@@ -178,6 +202,10 @@ def main():
         title=args.title,
         author=args.author,
         cover=args.cover,
+        subtitle=args.subtitle,
+        publisher=args.publisher,
+        copyright_year=copyright_year,
+        copyright_holder=copyright_holder,
         progress_callback=progress,
     )
 
